@@ -1,0 +1,31 @@
+Name:          cplex-haskell-bindings
+Version:       0.1
+license:       BSD3
+license-file:  LICENSE
+Copyright:     (c) Greg Horn 2012
+Author:        Greg Horn
+Maintainer:    gregmainland@gmail.com
+Stability:     Experimental
+--Category:      Math
+Build-type:    Simple
+Cabal-version: >=1.8
+synopsis:      Haskell bindings to CPLEX
+--description:   TODO
+
+Extra-source-files: cbits
+
+Library
+  Exposed-modules:  CPLEX.Bindings
+
+  Build-depends: base >= 4 && < 5
+  hs-source-dirs: src
+  
+  Extra-libraries: cplex124
+
+  Extra-lib-dirs:  /opt/ibm/ILOG/CPLEX_Studio124/cplex/bin/x86-64_sles10_4.1/
+--  Include-dirs:    /opt/ibm/ILOG/CPLEX_Studio124/cplex/include
+--  Ghc-options: -pgml g++
+--  cc-options: -Wall -Wextra
+
+--  C-sources:         cbits/my_cplex.c
+--  Install-includes:  cbits/my_cplex.h
