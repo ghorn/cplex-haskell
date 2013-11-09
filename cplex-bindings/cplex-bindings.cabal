@@ -1,15 +1,15 @@
-Name:          cplex-haskell-bindings
+Name:          cplex-bindings
 Version:       0.1
 license:       BSD3
 license-file:  LICENSE
-Copyright:     (c) Greg Horn 2012
+Copyright:     (c) Greg Horn 2012-2013
 Author:        Greg Horn
 Maintainer:    gregmainland@gmail.com
 Stability:     Experimental
 --Category:      Math
 Build-type:    Simple
 Cabal-version: >=1.8
-synopsis:      Haskell bindings to CPLEX
+synopsis:      low-level CPLEX bindings
 --description:   TODO
 
 Extra-source-files: cbits

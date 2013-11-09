@@ -1,5 +1,3 @@
-// sxmMath.hpp
-
 #ifndef __MY_CPLEX_H__
 #define __MY_CPLEX_H__
 
