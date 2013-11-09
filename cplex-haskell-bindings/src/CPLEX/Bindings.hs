@@ -13,11 +13,11 @@ module CPLEX.Bindings ( CpxEnv'
                       , c_CPXnewcols
                       , c_CPXaddcols
                       , c_CPXchgcoeflist
-                      , c_CPXchgcoef
                       , c_CPXchgrhs
                       , c_CPXchgrngval
                       , c_CPXchgbds
                       , c_CPXchgobj
+                      , c_CPXchgsense
                       , c_CPXgeterrorstring
                       , c_CPXgetstatstring
                       , c_CPXsetintparam
@@ -29,6 +29,11 @@ module CPLEX.Bindings ( CpxEnv'
                       , c_CPXcopyquad
 --                      , c_CPXcheckcopyquad
                       , c_CPXqpopt
+                      , c_CPXlpopt
+                      , c_CPXprimopt
+                      , c_CPXdualopt
+                      , c_CPXhybnetopt
+                      , c_CPXsiftopt
                       , c_CPXsolution
                       ) where
 
@@ -61,9 +66,6 @@ foreign import ccall unsafe "cplex.h CPXaddcols" c_CPXaddcols ::
 foreign import ccall unsafe "cplex.h CPXchgcoeflist" c_CPXchgcoeflist ::
   Ptr CpxEnv' -> Ptr CpxLp' -> CInt -> Ptr CInt -> Ptr CInt -> Ptr CDouble -> IO CInt
 
-foreign import ccall unsafe "cplex.h CPXchgcoef" c_CPXchgcoef ::
-  Ptr CpxEnv' -> Ptr CpxLp' -> CInt -> CInt -> CDouble -> IO CInt
-
 foreign import ccall unsafe "cplex.h CPXchgrhs" c_CPXchgrhs ::
   Ptr CpxEnv' -> Ptr CpxLp' -> CInt -> Ptr CInt -> Ptr CDouble -> IO CInt
 
@@ -75,6 +77,9 @@ foreign import ccall unsafe "cplex.h CPXchgbds" c_CPXchgbds ::
 
 foreign import ccall unsafe "cplex.h CPXchgrngval" c_CPXchgrngval ::
   Ptr CpxEnv' -> Ptr CpxLp' -> CInt -> Ptr CInt -> Ptr CDouble -> IO CInt
+
+foreign import ccall unsafe "cplex.h CPXchgsense" c_CPXchgsense ::
+  Ptr CpxEnv' -> Ptr CpxLp' -> CInt -> Ptr CInt -> Ptr CChar -> IO CInt
 
 foreign import ccall unsafe "cplex.h CPXgeterrorstring" c_CPXgeterrorstring ::
   Ptr CpxEnv' -> CInt -> Ptr CChar -> IO (Ptr CChar)
@@ -129,6 +134,21 @@ foreign import ccall unsafe "cplex.h CPXcopyquad" c_CPXcopyquad ::
 --  IO CInt
 
 foreign import ccall unsafe "cplex.h CPXqpopt" c_CPXqpopt ::
+  Ptr CpxEnv' -> Ptr CpxLp' -> IO CInt
+
+foreign import ccall unsafe "cplex.h CPXlpopt" c_CPXlpopt ::
+  Ptr CpxEnv' -> Ptr CpxLp' -> IO CInt
+
+foreign import ccall unsafe "cplex.h CPXprimopt" c_CPXprimopt ::
+  Ptr CpxEnv' -> Ptr CpxLp' -> IO CInt
+
+foreign import ccall unsafe "cplex.h CPXdualopt" c_CPXdualopt ::
+  Ptr CpxEnv' -> Ptr CpxLp' -> IO CInt
+
+foreign import ccall unsafe "cplex.h CPXhybnetopt" c_CPXhybnetopt ::
+  Ptr CpxEnv' -> Ptr CpxLp' -> CInt -> IO CInt
+
+foreign import ccall unsafe "cplex.h CPXsiftopt" c_CPXsiftopt ::
   Ptr CpxEnv' -> Ptr CpxLp' -> IO CInt
 
 foreign import ccall unsafe "cplex.h CPXsolution" c_CPXsolution ::

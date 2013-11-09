@@ -4,6 +4,7 @@ module CPLEX ( CpxEnv
              , CpxLp
              , ObjSense(..)
              , Sense(..)
+             , Bound(..)
              , Row(..)
              , Col(..)
              , CpxSolution(..)
@@ -19,7 +20,19 @@ module CPLEX ( CpxEnv
              , copyQuad
                --, checkCopyQuad
              , qpopt
+             , lpopt
+             , primopt
+             , dualopt
+             , siftopt
+             , hybnetopt
              , getSolution
+               -- * change things
+             , changeCoefList
+             , changeObj
+             , changeRhs
+             , changeBds
+             , changeRngVal
+             , changeSens
                -- * low level stuff
              , getNumCols
              , getNumRows
@@ -58,6 +71,10 @@ data Sense = L Double
            | E Double
            | G Double
            | R (Double,Double)
+
+data Bound = L' Double
+           | E' Double
+           | G' Double
 
 cpx_INFBOUND :: CDouble
 cpx_INFBOUND = 1.1e20
@@ -134,7 +151,7 @@ freeProb env@(CpxEnv env') (CpxLp lp) = do
   lpPtr <- new lp
   status <- c_CPXfreeprob env' lpPtr
   free lpPtr
-  
+
   case status of
     -- freed successfully
     0 -> return ()
@@ -157,7 +174,7 @@ data CpxSolution = CpxSolution { solObj :: Double
                                , solSlack :: Vector Double
                                , solDj :: Vector Double
                                }
-                               
+
 getSolution :: CpxEnv -> CpxLp -> IO (Either String CpxSolution)
 getSolution env@(CpxEnv env') lp@(CpxLp lp') = do
   lpstat' <- malloc
@@ -181,7 +198,7 @@ getSolution env@(CpxEnv env') lp@(CpxLp lp') = do
   objval <- peek objval'
   free lpstat'
   free objval'
-  
+
   x'' <- VS.freeze x
   p'' <- VS.freeze p
   slack'' <- VS.freeze slack
@@ -221,7 +238,7 @@ setDoubleParam env@(CpxEnv env') param val = do
       error $ "error calling CPXsetdblparam: " ++ msg
 
 newtype Row = Row {unRow :: Int}
-newtype Col = Col Int deriving (Ord, Eq)
+newtype Col = Col {unCol :: Int} deriving (Ord, Eq)
 
 toColForm :: Int -> [(Row,Col,Double)] -> (Vector CInt, Vector CInt, Vector CInt, Vector CDouble)
 toColForm numcols amat = (matbeg, matcnt, matind, matval)
@@ -235,12 +252,12 @@ toColForm numcols amat = (matbeg, matcnt, matind, matval)
     inds :: [Row]
     vals :: [Double]
     (inds,vals) = unzip $ concat rows
-    
+
     begs :: [Int]
     cnts :: [Int]
     rows :: [[(Row,Double)]]
     (begs,cnts,rows) = unzip3 $ colMapInfo' 0 $ M.elems colMap
-    
+
     colMapInfo' :: Int -> [[(Row,Double)]] -> [(Int,Int,[(Row,Double)])]
     colMapInfo' beg (row:xs) = (beg,cnt,row) : colMapInfo' (beg + cnt) xs
       where
@@ -249,7 +266,7 @@ toColForm numcols amat = (matbeg, matcnt, matind, matval)
 
     -- add Columns with no entries in case some are missing
     colMap = M.union colMap' emptyColMap
-    
+
     emptyColMap :: M.Map Col [(Row,Double)]
     emptyColMap = M.fromList $ take numcols $ zip (map Col [0..]) (repeat [])
 
@@ -311,7 +328,7 @@ copyLpWithFun copylpFun env@(CpxEnv env') (CpxLp lp) numcols numrows objsense ob
   let objsense' = fromIntegral (fromEnum objsense)
       numcols' = fromIntegral numcols
       numrows' = fromIntegral numrows
-      
+
   status <-
     VS.unsafeWith obj    $ \obj' ->
     VS.unsafeWith rhs    $ \rhs' ->
@@ -324,9 +341,10 @@ copyLpWithFun copylpFun env@(CpxEnv env') (CpxLp lp) numcols numrows objsense ob
     VS.unsafeWith ub     $ \ub' ->
     VS.unsafeWith rngval $ \rngval' ->
     copylpFun env' lp numcols' numrows' objsense' obj' rhs' sense' matbeg' matcnt' matind' matval' lb' ub' rngval'
-  
-  case status of 0 -> return Nothing
-                 k -> fmap Just $ getErrorString env (CpxRet k)
+
+  case status of
+    0 -> return Nothing
+    k -> fmap Just $ getErrorString env (CpxRet k)
 
 type CopyQuad =
   Ptr CpxEnv' -> Ptr CpxLp' -> Ptr CInt -> Ptr CInt -> Ptr CInt -> Ptr CDouble -> IO CInt
@@ -348,19 +366,138 @@ copyQuadWithFun copyQuadFun env@(CpxEnv env') (CpxLp lp) matbeg matcnt matind ma
     VS.unsafeWith matind $ \matind' ->
     VS.unsafeWith matval $ \matval' ->
     copyQuadFun env' lp matbeg' matcnt' matind' matval'
-  
+
   case status of
     0 -> return Nothing
     k -> fmap Just $ getErrorString env (CpxRet k)
 
 
-qpopt :: CpxEnv -> CpxLp -> IO (Maybe String)
-qpopt env@(CpxEnv env') (CpxLp lp') = do
-  status <- c_CPXqpopt env' lp'
+withOptFun :: (Ptr CpxEnv' -> Ptr CpxLp' -> IO CInt) -> CpxEnv -> CpxLp -> IO (Maybe String)
+withOptFun optFun env@(CpxEnv env') (CpxLp lp') = do
+  status <- optFun env' lp'
   case status of
     0 -> return Nothing
     k -> fmap Just (getErrorString env (CpxRet k))
+
+qpopt :: CpxEnv -> CpxLp -> IO (Maybe String)
+qpopt = withOptFun c_CPXqpopt
+
+lpopt :: CpxEnv -> CpxLp -> IO (Maybe String)
+lpopt = withOptFun c_CPXlpopt
+
+primopt :: CpxEnv -> CpxLp -> IO (Maybe String)
+primopt = withOptFun c_CPXprimopt
+
+dualopt :: CpxEnv -> CpxLp -> IO (Maybe String)
+dualopt = withOptFun c_CPXdualopt
+
+siftopt :: CpxEnv -> CpxLp -> IO (Maybe String)
+siftopt = withOptFun c_CPXsiftopt
+
+hybnetopt :: CpxEnv -> CpxLp -> Int -> IO (Maybe String)
+hybnetopt env lp k = withOptFun (\e l -> c_CPXhybnetopt e l (fromIntegral k)) env lp
+
 -------------------------------------------------
+
+
+changeCoefList :: CpxEnv -> CpxLp -> V.Vector (Row, Col, Double) -> IO (Maybe String)
+changeCoefList env@(CpxEnv env') (CpxLp lp') rcv = do
+  let num = fromIntegral (V.length rcv)
+      (rows', cols', vals') = V.unzip3 rcv
+      rows = VS.fromList $ V.toList $ V.map (fromIntegral . unRow) rows'
+      cols = VS.fromList $ V.toList $ V.map (fromIntegral . unCol) cols'
+      vals = VS.fromList $ V.toList $ V.map realToFrac vals'
+  status <-
+    VS.unsafeWith rows $ \rows'' ->
+    VS.unsafeWith cols $ \cols'' ->
+    VS.unsafeWith vals $ \vals'' ->
+    c_CPXchgcoeflist env' lp' num rows'' cols'' vals''
+  case status of
+    0 -> return Nothing
+    k -> fmap Just $ getErrorString env (CpxRet k)
+
+
+changeRhs :: CpxEnv -> CpxLp -> V.Vector (Row, Double) -> IO (Maybe String)
+changeRhs env@(CpxEnv env') (CpxLp lp') rv = do
+  let num = fromIntegral (V.length rv)
+      (rows', vals') = V.unzip rv
+      rows = VS.fromList $ V.toList $ V.map (fromIntegral . unRow) rows'
+      vals = VS.fromList $ V.toList $ V.map realToFrac vals'
+  status <-
+    VS.unsafeWith rows $ \rows'' ->
+    VS.unsafeWith vals $ \vals'' ->
+    c_CPXchgrhs env' lp' num rows'' vals''
+  case status of
+    0 -> return Nothing
+    k -> fmap Just $ getErrorString env (CpxRet k)
+
+changeObj :: CpxEnv -> CpxLp -> V.Vector (Col, Double) -> IO (Maybe String)
+changeObj env@(CpxEnv env') (CpxLp lp') cv = do
+  let num = fromIntegral (V.length cv)
+      (cols', vals') = V.unzip cv
+      cols = VS.fromList $ V.toList $ V.map (fromIntegral . unCol) cols'
+      vals = VS.fromList $ V.toList $ V.map realToFrac vals'
+  status <-
+    VS.unsafeWith cols $ \cols'' ->
+    VS.unsafeWith vals $ \vals'' ->
+    c_CPXchgobj env' lp' num cols'' vals''
+  case status of
+    0 -> return Nothing
+    k -> fmap Just $ getErrorString env (CpxRet k)
+
+
+changeBds :: CpxEnv -> CpxLp -> V.Vector (Col, Bound) -> IO (Maybe String)
+changeBds env@(CpxEnv env') (CpxLp lp') cb = do
+  let num = fromIntegral (V.length cb)
+      (cols', bounds') = V.unzip cb
+
+      fromBound :: Bound -> (CChar, CDouble)
+      fromBound (L' x) = (castCharToCChar 'L', realToFrac x)
+      fromBound (G' x) = (castCharToCChar 'G', realToFrac x)
+      fromBound (E' x) = (castCharToCChar 'E', realToFrac x)
+
+      (lus', bds') = V.unzip $ V.map fromBound bounds'
+
+      cols = VS.fromList $ V.toList $ V.map (fromIntegral . unCol) cols'
+      lus = VS.fromList $ V.toList $ lus'
+      bds = VS.fromList $ V.toList $ bds'
+  status <-
+    VS.unsafeWith cols $ \cols'' ->
+    VS.unsafeWith lus  $ \lus'' ->
+    VS.unsafeWith bds  $ \bds'' ->
+    c_CPXchgbds env' lp' num cols'' lus'' bds''
+  case status of
+    0 -> return Nothing
+    k -> fmap Just $ getErrorString env (CpxRet k)
+
+changeRngVal :: CpxEnv -> CpxLp -> V.Vector (Row, Double) -> IO (Maybe String)
+changeRngVal env@(CpxEnv env') (CpxLp lp') rv = do
+  let num = fromIntegral (V.length rv)
+      (rows', vals') = V.unzip rv
+      rows = VS.fromList $ V.toList $ V.map (fromIntegral . unRow) rows'
+      vals = VS.fromList $ V.toList $ V.map realToFrac vals'
+  status <-
+    VS.unsafeWith rows $ \rows'' ->
+    VS.unsafeWith vals $ \vals'' ->
+    c_CPXchgrngval env' lp' num rows'' vals''
+  case status of
+    0 -> return Nothing
+    k -> fmap Just $ getErrorString env (CpxRet k)
+
+changeSens :: CpxEnv -> CpxLp -> V.Vector (Row, Char) -> IO (Maybe String)
+changeSens env@(CpxEnv env') (CpxLp lp') rs = do
+  let num = fromIntegral (V.length rs)
+      (rows', senses') = V.unzip rs
+      rows = VS.fromList $ V.toList $ V.map (fromIntegral . unRow) rows'
+      senses = VS.fromList $ V.toList $ V.map castCharToCChar senses'
+  status <-
+    VS.unsafeWith rows $ \rows'' ->
+    VS.unsafeWith senses $ \senses'' ->
+    c_CPXchgsense env' lp' num rows'' senses''
+  case status of
+    0 -> return Nothing
+    k -> fmap Just $ getErrorString env (CpxRet k)
+
 
 -------------------------------------------------
 
