@@ -1,7 +1,6 @@
 {-# OPTIONS_GHC -Wall #-}
 
-module Example ( run
-               ) where
+module Main where
 
 import qualified Data.Vector as V
 
@@ -15,8 +14,8 @@ cpx_ON  =  1
 cpx_OFF :: Integer
 cpx_OFF =  0
 
-run :: IO ()
-run = withEnv $ \env -> do
+main :: IO ()
+main = withEnv $ \env -> do
   setIntParam env CPX_PARAM_SCRIND cpx_ON
   setIntParam env CPX_PARAM_DATACHECK cpx_ON
   withLp env "testprob" $ \lp -> do
