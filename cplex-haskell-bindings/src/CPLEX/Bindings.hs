@@ -2,8 +2,8 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE EmptyDataDecls #-}
 
-module CPLEX.Bindings ( CPXENV'
-                      , CPXLP'
+module CPLEX.Bindings ( CpxEnv'
+                      , CpxLp'
                       , c_CPXopenCPLEX
                       , c_CPXcloseCPLEX
                       , c_CPXcreateprob
@@ -25,7 +25,9 @@ module CPLEX.Bindings ( CPXENV'
                       , c_CPXgetnumcols
                       , c_CPXgetnumrows
                       , c_CPXcopylp
+--                      , c_CPXcheckcopylp
                       , c_CPXcopyquad
+--                      , c_CPXcheckcopyquad
                       , c_CPXqpopt
                       , c_CPXsolution
                       ) where
@@ -33,67 +35,67 @@ module CPLEX.Bindings ( CPXENV'
 import Foreign.C ( CInt(..), CDouble(..), CChar(..) )
 import Foreign.Ptr ( Ptr )
 
-data CPXENV'
-data CPXLP'
+data CpxEnv'
+data CpxLp'
 
-foreign import ccall unsafe "cplex.h CPXopenCPLEX" c_CPXopenCPLEX :: Ptr CInt -> IO (Ptr CPXENV')
-foreign import ccall unsafe "cplex.h CPXcloseCPLEX" c_CPXcloseCPLEX :: Ptr (Ptr CPXENV') -> IO CInt
+foreign import ccall unsafe "cplex.h CPXopenCPLEX" c_CPXopenCPLEX :: Ptr CInt -> IO (Ptr CpxEnv')
+foreign import ccall unsafe "cplex.h CPXcloseCPLEX" c_CPXcloseCPLEX :: Ptr (Ptr CpxEnv') -> IO CInt
 
 foreign import ccall unsafe "cplex.h CPXcreateprob" c_CPXcreateprob ::
-  Ptr CPXENV' -> Ptr CInt -> Ptr CChar -> IO (Ptr CPXLP')
+  Ptr CpxEnv' -> Ptr CInt -> Ptr CChar -> IO (Ptr CpxLp')
 foreign import ccall unsafe "cplex.h CPXfreeprob" c_CPXfreeprob ::
-  Ptr CPXENV' -> Ptr (Ptr CPXLP') -> IO CInt
+  Ptr CpxEnv' -> Ptr (Ptr CpxLp') -> IO CInt
 
 foreign import ccall unsafe "cplex.h CPXnewrows" c_CPXnewrows ::
-  Ptr CPXENV' -> Ptr CPXLP' -> CInt -> Ptr CDouble -> Ptr CChar -> Ptr CDouble -> Ptr (Ptr CChar) -> IO CInt
+  Ptr CpxEnv' -> Ptr CpxLp' -> CInt -> Ptr CDouble -> Ptr CChar -> Ptr CDouble -> Ptr (Ptr CChar) -> IO CInt
 
 foreign import ccall unsafe "cplex.h CPXaddrows" c_CPXaddrows ::
-  Ptr CPXENV' -> Ptr CPXLP' -> CInt -> CInt -> CInt -> Ptr CDouble -> Ptr CChar -> Ptr CInt -> Ptr CInt -> Ptr CDouble -> Ptr (Ptr CChar) -> Ptr (Ptr CChar) -> IO CInt
+  Ptr CpxEnv' -> Ptr CpxLp' -> CInt -> CInt -> CInt -> Ptr CDouble -> Ptr CChar -> Ptr CInt -> Ptr CInt -> Ptr CDouble -> Ptr (Ptr CChar) -> Ptr (Ptr CChar) -> IO CInt
 
 foreign import ccall unsafe "cplex.h CPXnewcols" c_CPXnewcols ::
-  Ptr CPXENV' -> Ptr CPXLP' -> CInt -> Ptr CDouble -> Ptr CDouble -> Ptr CDouble -> Ptr CChar -> Ptr (Ptr CChar) -> IO CInt
+  Ptr CpxEnv' -> Ptr CpxLp' -> CInt -> Ptr CDouble -> Ptr CDouble -> Ptr CDouble -> Ptr CChar -> Ptr (Ptr CChar) -> IO CInt
 
 foreign import ccall unsafe "cplex.h CPXaddcols" c_CPXaddcols ::
-  Ptr CPXENV' -> Ptr CPXLP' -> CInt -> CInt -> Ptr CDouble -> Ptr CInt -> Ptr CInt -> Ptr CDouble -> Ptr CDouble -> Ptr CDouble -> Ptr (Ptr CChar) -> IO CInt
+  Ptr CpxEnv' -> Ptr CpxLp' -> CInt -> CInt -> Ptr CDouble -> Ptr CInt -> Ptr CInt -> Ptr CDouble -> Ptr CDouble -> Ptr CDouble -> Ptr (Ptr CChar) -> IO CInt
 
 foreign import ccall unsafe "cplex.h CPXchgcoeflist" c_CPXchgcoeflist ::
-  Ptr CPXENV' -> Ptr CPXLP' -> CInt -> Ptr CInt -> Ptr CInt -> Ptr CDouble -> IO CInt
+  Ptr CpxEnv' -> Ptr CpxLp' -> CInt -> Ptr CInt -> Ptr CInt -> Ptr CDouble -> IO CInt
 
 foreign import ccall unsafe "cplex.h CPXchgcoef" c_CPXchgcoef ::
-  Ptr CPXENV' -> Ptr CPXLP' -> CInt -> CInt -> CDouble -> IO CInt
+  Ptr CpxEnv' -> Ptr CpxLp' -> CInt -> CInt -> CDouble -> IO CInt
 
 foreign import ccall unsafe "cplex.h CPXchgrhs" c_CPXchgrhs ::
-  Ptr CPXENV' -> Ptr CPXLP' -> CInt -> Ptr CInt -> Ptr CDouble -> IO CInt
+  Ptr CpxEnv' -> Ptr CpxLp' -> CInt -> Ptr CInt -> Ptr CDouble -> IO CInt
 
 foreign import ccall unsafe "cplex.h CPXchgobj" c_CPXchgobj ::
-  Ptr CPXENV' -> Ptr CPXLP' -> CInt -> Ptr CInt -> Ptr CDouble -> IO CInt
+  Ptr CpxEnv' -> Ptr CpxLp' -> CInt -> Ptr CInt -> Ptr CDouble -> IO CInt
 
 foreign import ccall unsafe "cplex.h CPXchgbds" c_CPXchgbds ::
-  Ptr CPXENV' -> Ptr CPXLP' -> CInt -> Ptr CInt -> Ptr CChar -> Ptr CDouble -> IO CInt
+  Ptr CpxEnv' -> Ptr CpxLp' -> CInt -> Ptr CInt -> Ptr CChar -> Ptr CDouble -> IO CInt
 
 foreign import ccall unsafe "cplex.h CPXchgrngval" c_CPXchgrngval ::
-  Ptr CPXENV' -> Ptr CPXLP' -> CInt -> Ptr CInt -> Ptr CDouble -> IO CInt
+  Ptr CpxEnv' -> Ptr CpxLp' -> CInt -> Ptr CInt -> Ptr CDouble -> IO CInt
 
 foreign import ccall unsafe "cplex.h CPXgeterrorstring" c_CPXgeterrorstring ::
-  Ptr CPXENV' -> CInt -> Ptr CChar -> IO (Ptr CChar)
+  Ptr CpxEnv' -> CInt -> Ptr CChar -> IO (Ptr CChar)
 
 foreign import ccall unsafe "cplex.h CPXgetstatstring" c_CPXgetstatstring ::
-  Ptr CPXENV' -> CInt -> Ptr CChar -> IO (Ptr CChar)
+  Ptr CpxEnv' -> CInt -> Ptr CChar -> IO (Ptr CChar)
 
 foreign import ccall unsafe "cplex.h CPXsetintparam" c_CPXsetintparam ::
-  Ptr CPXENV' -> CInt -> CInt -> IO CInt
+  Ptr CpxEnv' -> CInt -> CInt -> IO CInt
 
 foreign import ccall unsafe "cplex.h CPXsetdblparam" c_CPXsetdblparam ::
-  Ptr CPXENV' -> CInt -> CDouble -> IO CInt
+  Ptr CpxEnv' -> CInt -> CDouble -> IO CInt
 
 foreign import ccall unsafe "cplex.h CPXgetnumcols" c_CPXgetnumcols ::
-  Ptr CPXENV' -> Ptr CPXLP' -> CInt
+  Ptr CpxEnv' -> Ptr CpxLp' -> IO CInt
 
 foreign import ccall unsafe "cplex.h CPXgetnumrows" c_CPXgetnumrows ::
-  Ptr CPXENV' -> Ptr CPXLP' -> CInt
+  Ptr CpxEnv' -> Ptr CpxLp' -> IO CInt
 
 foreign import ccall unsafe "cplex.h CPXcopylp" c_CPXcopylp ::
-  Ptr CPXENV' -> Ptr CPXLP' -> CInt -> -- (CPXCENVptr env, CPXLP'ptr lp, int numcols,
+  Ptr CpxEnv' -> Ptr CpxLp' -> CInt -> -- (CPXCENVptr env, CpxLp'ptr lp, int numcols,
   CInt -> CInt -> Ptr CDouble ->     --  int numrows, int objsense, const double *objective,
   Ptr CDouble -> Ptr CChar ->        --  const double *rhs, const char *sense,
   Ptr CInt -> Ptr CInt ->            --  const int *matbeg, const int *matcnt,
@@ -102,17 +104,34 @@ foreign import ccall unsafe "cplex.h CPXcopylp" c_CPXcopylp ::
   Ptr CDouble                        --  const double *rngval);
   -> IO CInt
 
+--foreign import ccall unsafe "cplexcheck.h CPXcheckcopylp" c_CPXcheckcopylp ::
+--                                         "CPXcheckcopylp"
+--  Ptr CpxEnv' -> Ptr CpxLp' -> CInt -> -- (CPXCENVptr env, CpxLp'ptr lp, int numcols,
+--  CInt -> CInt -> Ptr CDouble ->     --  int numrows, int objsense, const double *objective,
+--  Ptr CDouble -> Ptr CChar ->        --  const double *rhs, const char *sense,
+--  Ptr CInt -> Ptr CInt ->            --  const int *matbeg, const int *matcnt,
+--  Ptr CInt -> Ptr CDouble ->         --  const int *matind, const double *matval,
+--  Ptr CDouble -> Ptr CDouble ->      --  const double *lb, const double *ub,
+--  Ptr CDouble                        --  const double *rngval);
+--  -> IO CInt
+
 
 foreign import ccall unsafe "cplex.h CPXcopyquad" c_CPXcopyquad ::
-  Ptr CPXENV' -> Ptr CPXLP' -> Ptr CInt -> -- (CPXCENVptr env, CPXLP'ptr lp, const int *qmatbeg,
+  Ptr CpxEnv' -> Ptr CpxLp' -> Ptr CInt -> -- (CPXCENVptr env, CpxLp'ptr lp, const int *qmatbeg,
   Ptr CInt -> Ptr CInt ->                --  const int *qmatcnt, const int *qmatind,
   Ptr CDouble ->                         --  const double *qmatval);
   IO CInt
 
+--foreign import ccall unsafe "cplexcheck.h CPXcheckcopyquad" c_CPXcheckcopyquad ::
+--  Ptr CpxEnv' -> Ptr CpxLp' -> Ptr CInt -> -- (CPXCENVptr env, CpxLp'ptr lp, const int *qmatbeg,
+--  Ptr CInt -> Ptr CInt ->                --  const int *qmatcnt, const int *qmatind,
+--  Ptr CDouble ->                         --  const double *qmatval);
+--  IO CInt
+
 foreign import ccall unsafe "cplex.h CPXqpopt" c_CPXqpopt ::
-  Ptr CPXENV' -> Ptr CPXLP' -> IO CInt
+  Ptr CpxEnv' -> Ptr CpxLp' -> IO CInt
 
 foreign import ccall unsafe "cplex.h CPXsolution" c_CPXsolution ::
-  Ptr CPXENV' -> Ptr CPXLP' -> Ptr CInt ->       -- (CPXCENVptr env, CPXCLPptr lp, int *lpstat_p,
+  Ptr CpxEnv' -> Ptr CpxLp' -> Ptr CInt ->       -- (CPXCENVptr env, CPXCLPptr lp, int *lpstat_p,
   Ptr CDouble -> Ptr CDouble -> Ptr CDouble -> --  double *objval_p, double *x, double *pi,
   Ptr CDouble -> Ptr CDouble -> IO CInt        --  double *slack, double *dj);
