@@ -33,6 +33,7 @@ module CPLEX ( CpxEnv
              , changeBds
              , changeRngVal
              , changeSens
+             , changeQpCoef
                -- * low level stuff
              , getNumCols
              , getNumRows
@@ -59,7 +60,7 @@ import CPLEX.Param
 newtype CpxEnv = CpxEnv (Ptr CpxEnv')
 newtype CpxLp = CpxLp (Ptr CpxLp')
 
-data ObjSense = CPX_MIN | CPX_MAX
+data ObjSense = CPX_MIN | CPX_MAX deriving Show
 instance Enum ObjSense where
   fromEnum CPX_MIN = 1
   fromEnum CPX_MAX = -1
@@ -70,11 +71,13 @@ instance Enum ObjSense where
 data Sense = L Double
            | E Double
            | G Double
-           | R (Double,Double)
+           | R Double Double
+           deriving (Eq, Show)
 
 data Bound = L' Double
            | E' Double
-           | G' Double
+           | U' Double
+           deriving (Eq, Show)
 
 cpx_INFBOUND :: CDouble
 cpx_INFBOUND = 1.1e20
@@ -173,7 +176,7 @@ data CpxSolution = CpxSolution { solObj :: Double
                                , solPi :: Vector Double
                                , solSlack :: Vector Double
                                , solDj :: Vector Double
-                               }
+                               } deriving Show
 
 getSolution :: CpxEnv -> CpxLp -> IO (Either String CpxSolution)
 getSolution env@(CpxEnv env') lp@(CpxLp lp') = do
@@ -237,8 +240,12 @@ setDoubleParam env@(CpxEnv env') param val = do
       msg <- getErrorString env (CpxRet k)
       error $ "error calling CPXsetdblparam: " ++ msg
 
-newtype Row = Row {unRow :: Int}
+newtype Row = Row {unRow :: Int} deriving Eq
 newtype Col = Col {unCol :: Int} deriving (Ord, Eq)
+instance Show Row where
+  show = show . unRow
+instance Show Col where
+  show = show . unCol
 
 toColForm :: Int -> [(Row,Col,Double)] -> (Vector CInt, Vector CInt, Vector CInt, Vector CDouble)
 toColForm numcols amat = (matbeg, matcnt, matind, matval)
@@ -308,10 +315,10 @@ copyLpWithFun' copyLpFun env lp objsense objcoeffs senseRhsRngVal aMat xbnds =
     (lb',ub') = V.unzip $ V.map toBnds xbnds
 
     toRhs :: Sense -> (CChar, CDouble, CDouble)
-    toRhs (L x)     = (castCharToCChar 'L', realToFrac x,               0)
-    toRhs (E x)     = (castCharToCChar 'E', realToFrac x,               0)
-    toRhs (G x)     = (castCharToCChar 'G', realToFrac x,               0)
-    toRhs (R (l,u)) = (castCharToCChar 'R', realToFrac l, realToFrac (u-l))
+    toRhs (L x)   = (castCharToCChar 'L', realToFrac x,               0)
+    toRhs (E x)   = (castCharToCChar 'E', realToFrac x,               0)
+    toRhs (G x)   = (castCharToCChar 'G', realToFrac x,               0)
+    toRhs (R l u) = (castCharToCChar 'R', realToFrac l, realToFrac (u-l))
 
     sense  = VS.fromList $ V.toList sense'
     rngval = VS.fromList $ V.toList rngval'
@@ -453,7 +460,7 @@ changeBds env@(CpxEnv env') (CpxLp lp') cb = do
 
       fromBound :: Bound -> (CChar, CDouble)
       fromBound (L' x) = (castCharToCChar 'L', realToFrac x)
-      fromBound (G' x) = (castCharToCChar 'G', realToFrac x)
+      fromBound (U' x) = (castCharToCChar 'U', realToFrac x)
       fromBound (E' x) = (castCharToCChar 'E', realToFrac x)
 
       (lus', bds') = V.unzip $ V.map fromBound bounds'
@@ -494,6 +501,13 @@ changeSens env@(CpxEnv env') (CpxLp lp') rs = do
     VS.unsafeWith rows $ \rows'' ->
     VS.unsafeWith senses $ \senses'' ->
     c_CPXchgsense env' lp' num rows'' senses''
+  case status of
+    0 -> return Nothing
+    k -> fmap Just $ getErrorString env (CpxRet k)
+
+changeQpCoef :: CpxEnv -> CpxLp -> Row -> Col -> Double -> IO (Maybe String)
+changeQpCoef env@(CpxEnv env') (CpxLp lp') (Row row) (Col col) val = do
+  status <- c_CPXchgqpcoef env' lp' (fromIntegral row) (fromIntegral col) (realToFrac val)
   case status of
     0 -> return Nothing
     k -> fmap Just $ getErrorString env (CpxRet k)

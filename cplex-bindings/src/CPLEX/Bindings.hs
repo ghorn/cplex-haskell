@@ -18,6 +18,7 @@ module CPLEX.Bindings ( CpxEnv'
                       , c_CPXchgbds
                       , c_CPXchgobj
                       , c_CPXchgsense
+                      , c_CPXchgqpcoef
                       , c_CPXgeterrorstring
                       , c_CPXgetstatstring
                       , c_CPXsetintparam
@@ -80,6 +81,9 @@ foreign import ccall unsafe "cplex.h CPXchgrngval" c_CPXchgrngval ::
 
 foreign import ccall unsafe "cplex.h CPXchgsense" c_CPXchgsense ::
   Ptr CpxEnv' -> Ptr CpxLp' -> CInt -> Ptr CInt -> Ptr CChar -> IO CInt
+
+foreign import ccall unsafe "cplex.h CPXchgqpcoef" c_CPXchgqpcoef ::
+  Ptr CpxEnv' -> Ptr CpxLp' -> CInt -> CInt -> CDouble -> IO CInt
 
 foreign import ccall unsafe "cplex.h CPXgeterrorstring" c_CPXgeterrorstring ::
   Ptr CpxEnv' -> CInt -> Ptr CChar -> IO (Ptr CChar)

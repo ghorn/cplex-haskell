@@ -15,7 +15,10 @@ cpx_OFF :: Integer
 cpx_OFF =  0
 
 main :: IO ()
-main = withEnv $ \env -> do
+main = sol' >>= print
+
+sol' :: IO ()
+sol' = withEnv $ \env -> do
   setIntParam env CPX_PARAM_SCRIND cpx_ON
   setIntParam env CPX_PARAM_DATACHECK cpx_ON
   withLp env "testprob" $ \lp -> do

@@ -16,5 +16,7 @@ library
                      CPLEX.Param
   -- other-modules:  
   Build-depends:     base >= 4 && < 5,
-                     cplex-bindings
+                     cplex-bindings,
+                     vector,
+                     containers
   hs-source-dirs:    src
