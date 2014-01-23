@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -Wall #-}
+{-# Language GeneralizedNewtypeDeriving #-}
 
 module CPLEX ( CpxEnv
              , CpxLp
@@ -240,8 +241,8 @@ setDoubleParam env@(CpxEnv env') param val = do
       msg <- getErrorString env (CpxRet k)
       error $ "error calling CPXsetdblparam: " ++ msg
 
-newtype Row = Row {unRow :: Int} deriving Eq
-newtype Col = Col {unCol :: Int} deriving (Ord, Eq)
+newtype Row = Row {unRow :: Int} deriving (Ord, Eq, Num)
+newtype Col = Col {unCol :: Int} deriving (Ord, Eq, Num)
 instance Show Row where
   show = show . unRow
 instance Show Col where
